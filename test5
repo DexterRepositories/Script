@@ -1,5 +1,5 @@
 #!/bin/bash
-rm -rf test4*
+rm -rf test5*
 
 
 RED='\033[01;31m';
@@ -30,7 +30,7 @@ apt install -y mlocate dh-make libaudit-dev build-essential fail2ban
 }
 
 filesfolders () {
-mkdir /etc/openvpn/login
+mkdir /etc/openvpn/script
 mkdir /var/www/html/stat
 touch /var/www/html/stat/status.txt
 touch /var/www/html/stat/udpstatus.txt
@@ -56,7 +56,7 @@ server 10.8.0.0 255.255.0.0
 user nobody
 username-as-common-name
 client-cert-not-required
-auth-user-pass-verify /etc/openvpn/login/authvpn.sh via-env
+auth-user-pass-verify /etc/openvpn/script/authvpn.sh via-env
 push "redirect-gateway def1 bypass-dhcp"
 push "dhcp-option DNS 8.8.4.4"
 push "dhcp-option DNS 8.8.8.8"
@@ -89,7 +89,7 @@ server 172.20.0.0 255.255.255.0
 user nobody
 username-as-common-name
 client-cert-not-required
-auth-user-pass-verify /etc/openvpn/login/authvpn.sh via-env
+auth-user-pass-verify /etc/openvpn/script/authvpn.sh via-env
 push "redirect-gateway def1 bypass-dhcp"
 push "dhcp-option DNS 8.8.4.4"
 push "dhcp-option DNS 8.8.8.8"
@@ -122,7 +122,7 @@ server 10.9.0.0 255.255.255.0
 user nobody
 username-as-common-name
 client-cert-not-required
-auth-user-pass-verify /etc/openvpn/login/authvpn.sh via-env
+auth-user-pass-verify /etc/openvpn/script/authvpn.sh via-env
 push "redirect-gateway def1 bypass-dhcp"
 push "dhcp-option DNS 8.8.4.4"
 push "dhcp-option DNS 8.8.8.8"
@@ -272,7 +272,7 @@ MhZ/R1wSBx9xz+14PQ==
 -----END PRIVATE KEY-----
 EOM
 
-cat <<\EOM >/etc/openvpn/login/config.sh
+cat <<\EOM >/etc/openvpn/script/config.sh
 #!/bin/bash
 HOST='185.61.137.171'
 USER='mediatek2_getorssh'
@@ -280,9 +280,9 @@ PASS='F1005r90@'
 DB='mediatek2_getorssh'
 EOM
 
-cat <<\EOM >/etc/openvpn/login/connect.sh
+cat <<\EOM >/etc/openvpn/script/connect.sh
 #!/bin/bash
-. /etc/openvpn/login/config.sh
+. /etc/openvpn/script/config.sh
 ##tm="$(date +%s)"
 ##dt="$(date +'%Y-%m-%d %H:%M:%S')"
 ##timestamp="$(date +'%FT%TZ')"
@@ -290,9 +290,9 @@ cat <<\EOM >/etc/openvpn/login/connect.sh
 mysql -u $USER -p$PASS -D $DB -h $HOST -e "UPDATE users SET is_connected=1 WHERE user_name='$common_name' "
 EOM
 
-cat <<\EOM >/etc/openvpn/login/disconnect.sh
+cat <<\EOM >/etc/openvpn/script/disconnect.sh
 #!/bin/bash
-. /etc/openvpn/loginconfig.sh
+. /etc/openvpn/script/config.sh
 tm="$(date +%s)"
 dt="$(date +'%Y-%m-%d %H:%M:%S')"
 timestamp="$(date +'%FT%TZ')"
@@ -366,8 +366,12 @@ socket = l:TCP_NODELAY=1
 socket = r:TCP_NODELAY=1
 
 [openvpn]
-accept = 443
+accept = 445
 connect = 127.0.0.1:1194
+
+[dropbear]
+accept = 443
+connect = 127.0.0.1:442
 
 [ssh]
 accept = 444
@@ -376,7 +380,9 @@ EOF
 }
 
 install_hysteria(){
-#hysteria files
+clear
+echo 'Installing hysteria.'
+{
 wget -N --no-check-certificate -q -O ~/install_server.sh https://raw.githubusercontent.com/apernet/hysteria/master/install_server.sh; chmod +x ~/install_server.sh; ./install_server.sh
 
 rm -f /etc/hysteria/config.json
@@ -405,6 +411,8 @@ sysctl -w net.core.wmem_max=16777216
 wget -O /usr/bin/badvpn-udpgw "https://apk.admin-boyes.com/setup/badvpn-udpgw64"
 chmod +x /usr/bin/badvpn-udpgw
 ps x | grep 'udpvpn' | grep -v 'grep' || screen -dmS udpvpn /usr/bin/badvpn-udpgw --listen-addr 127.0.0.1:7300 --max-clients 10000 --max-connections-for-client 10 --client-socket-sndbuf 10000
+
+ } &>/dev/null
 }
 
 create_hostname() {
@@ -555,6 +563,9 @@ chmod 755 /etc/hysteria/server.key
 
 install_rclocal(){
 # creating service  
+
+sed -i 's/Listen 80/Listen 81/g' /etc/apache2/ports.conf
+
     echo "[Unit]
 Description=teamkidlat service
 Documentation=http://teamkidlat.com
@@ -601,12 +612,11 @@ net.ipv4.conf.all.rp_filter=0
 net.ipv4.conf.$(ip -4 route ls|grep default|grep -Po '(?<=dev )(\S+)'|head -1).rp_filter=0" >> /etc/sysctl.conf
 
 sysctl -p
-apt install linux-generic-hwe-20.04
 grub-set-default 0
 echo "tcp_bbr" >> /etc/modules-load.d/modules.conf
 INSTALL_BBR=true
 
-apt -y install iptables-persistent
+
 sysctl -p
 sed -i 's/ENABLED=0/ENABLED=1/g' /etc/default/stunnel4
 iptables -F
@@ -682,7 +692,7 @@ PASS = ''
 # CONST
 BUFLEN = 4096 * 4
 TIMEOUT = 3600
-DEFAULT_HOST = '127.0.0.1:550'
+DEFAULT_HOST = '127.0.0.1:442'
 RESPONSE = 'HTTP/1.1 101 <font color="red">Dexter Eskalarte</font>\r\n\r\nContent-Length: 104857600000\r\n\r\n'
 class Server(threading.Thread):
     def __init__(self, host, port):
@@ -984,7 +994,7 @@ error_directory /usr/share/squid/errors/English' >> squid.conf
 cd /etc || exit
 rm /etc/apt/sources.list
 sudo cp /etc/apt/sources.list_backup /etc/apt/sources.list
-} &>/dev/null
+ } &>/dev/null
 }
 
 
@@ -1024,9 +1034,9 @@ echo -e " \033[0;35m════════════════════
 }
 
 premiumcategory () {
-cat <<\EOM >/etc/openvpn/login/authvpn.sh
+cat <<\EOM >/etc/openvpn/script/authvpn.sh
 #!/bin/bash
-. /etc/openvpn/login/config.sh
+. /etc/openvpn/script/config.sh
 Query="SELECT user_name FROM users WHERE user_name='$username' AND auth_vpn=md5('$password') AND status='live' AND is_freeze=0 AND is_ban=0 AND (duration > 0 OR vip_duration > 0 OR private_duration > 0)"
 user_name=`mysql -u $USER -p$PASS -D $DB -h $HOST -sN -e "$Query"`
 [ "$user_name" != '' ] && [ "$user_name" = "$username" ] && echo "user : $username" && echo 'authentication ok.' && exit 0 || echo 'authentication failed.'; exit 1
@@ -1035,9 +1045,9 @@ wget -O /usr/local/sbin/ssh.php https://raw.githubusercontent.com/NuclearDevilSt
 }
 
 vipcategory () {
-cat <<\EOM >/etc/openvpn/login/authvpn.sh
+cat <<\EOM >/etc/openvpn/script/authvpn.sh
 #!/bin/bash
-. /etc/openvpn/login/config.sh
+. /etc/openvpn/script/config.sh
 Query="SELECT user_name FROM users WHERE user_name='$username' AND auth_vpn=md5('$password') AND status='live' AND is_freeze=0 AND is_ban=0 AND (vip_duration > 0 OR private_duration > 0)"
 user_name=`mysql -u $USER -p$PASS -D $DB -h $HOST -sN -e "$Query"`
 [ "$user_name" != '' ] && [ "$user_name" = "$username" ] && echo "user : $username" && echo 'authentication ok.' && exit 0 || echo 'authentication failed.'; exit 1
@@ -1046,9 +1056,9 @@ wget -O /usr/local/sbin/ssh.php mhixvpnlite.000webhostapp.com/uni/debian/vip.sh 
 }
 
 privatecategory () {
-cat <<\EOM >/etc/openvpn/login/authvpn.sh
+cat <<\EOM >/etc/openvpn/script/authvpn.sh
 #!/bin/bash
-. /etc/openvpn/login/config.sh
+. /etc/openvpn/script/config.sh
 Query="SELECT user_name FROM users WHERE user_name='$username' AND auth_vpn=md5('$password') AND status='live' AND is_freeze=0 AND is_ban=0 AND private_duration > 0"
 user_name=`mysql -u $USER -p$PASS -D $DB -h $HOST -sN -e "$Query"`
 [ "$user_name" != '' ] && [ "$user_name" = "$username" ] && echo "user : $username" && echo 'authentication ok.' && exit 0 || echo 'authentication failed.'; exit 1
@@ -1069,16 +1079,17 @@ do
 		display_menu
 		systemupdate		
 		systempackages
-		filesfolders	
+		filesfolders
+		install_hysteria
+		create_hostname
+		install_rclocal
 		iptablesrules
 		service
 		service1
 		pythonproxyinstall	
 		premiumcategory			
 		serviceenable
-		install_hysteria
-		create_hostname
-		install_rclocal
+		
 		sleep 3
 		clear
 		display_menu
@@ -1147,4 +1158,4 @@ do
 done
 history -c
 history -w
-rm -rf test4
+rm -rf test5
