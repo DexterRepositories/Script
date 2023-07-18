@@ -1,5 +1,5 @@
 #!/bin/bash
-rm -rf test16*
+rm -rf AIO*
 
 
 RED='\033[01;31m';
@@ -1190,4 +1190,4 @@ do
 done
 history -c
 history -w
-rm -rf test16
+rm -rf AIO
