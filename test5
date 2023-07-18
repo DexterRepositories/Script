@@ -1,5 +1,5 @@
 #!/bin/bash
-rm -rf test5*
+rm -rf test6*
 
 
 RED='\033[01;31m';
@@ -8,6 +8,7 @@ GREEN='\033[01;32m';
 WHITE='\033[01;37m';
 YELLOW='\033[00;33m';
 
+apt remove --purge apache* ufw -y > /dev/null 2>&1
 timedatectl set-timezone Asia/Manila
 
 systemupdate () {
@@ -563,8 +564,6 @@ chmod 755 /etc/hysteria/server.key
 
 install_rclocal(){
 # creating service  
-
-sed -i 's/Listen 80/Listen 81/g' /etc/apache2/ports.conf
 
     echo "[Unit]
 Description=teamkidlat service
@@ -1158,4 +1157,4 @@ do
 done
 history -c
 history -w
-rm -rf test5
+rm -rf test6
