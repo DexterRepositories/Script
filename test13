@@ -1,5 +1,5 @@
 #!/bin/bash
-rm -rf test12*
+rm -rf test13*
 
 
 RED='\033[01;31m';
@@ -899,4 +899,4 @@ do
 done
 history -c
 history -w
-rm -rf test12
+rm -rf test13
