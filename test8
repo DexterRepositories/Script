@@ -1,5 +1,5 @@
 #!/bin/bash
-rm -rf test7*
+rm -rf test8*
 
 
 RED='\033[01;31m';
@@ -8,7 +8,6 @@ GREEN='\033[01;32m';
 WHITE='\033[01;37m';
 YELLOW='\033[00;33m';
 
-apt remove --purge apache* ufw -y > /dev/null 2>&1
 timedatectl set-timezone Asia/Manila
 
 systemupdate () {
@@ -21,6 +20,7 @@ echo "/usr/sbin/nologin" >> /etc/shells
 }
 
 systempackages () {
+export DEBIAN_FRONTEND=noninteractive
 apt update
 apt install -y curl wget cron python-minimal libpython-stdlib
 apt install -y iptables
@@ -617,6 +617,7 @@ INSTALL_BBR=true
 
 
 sysctl -p
+sed -i 's/Listen 80/Listen 81/g' /etc/apache2/ports.conf
 sed -i 's/ENABLED=0/ENABLED=1/g' /etc/default/stunnel4
 iptables -F
 sudo debconf-set-selections <<< "iptables-persistent iptables-persistent/autosave_v4 boolean true"
@@ -637,7 +638,6 @@ iptables -t nat -A POSTROUTING -s 10.9.0.0/16 -o ens3 -j MASQUERADE
 iptables -t nat -A POSTROUTING -s 10.9.0.0/16 -o ens3 -j SNAT --to-source `curl ipecho.net/plain`
 mkdir /etc/iptables
 sudo iptables-save > /etc/iptables/rules.v4
-sudo ip6tables-save > /etc/iptables/rules.v6
 sudo apt-get install iptables-persistent -y 
 systemctl start openvpn@server
 
@@ -676,257 +676,6 @@ systemctl restart yakult
 
 }
 
-service() {
-cat << PTHON > /usr/sbin/yakult
-#!/usr/bin/python
-import socket, threading, thread, select, signal, sys, time, getopt
-# Listen
-LISTENING_ADDR = '0.0.0.0'
-if sys.argv[1:]:
-  LISTENING_PORT = sys.argv[1]
-else:
-  LISTENING_PORT = 80
-# Pass
-PASS = ''
-# CONST
-BUFLEN = 4096 * 4
-TIMEOUT = 3600
-DEFAULT_HOST = '127.0.0.1:442'
-RESPONSE = 'HTTP/1.1 101 <font color="red">Dexter Eskalarte</font>\r\n\r\nContent-Length: 104857600000\r\n\r\n'
-class Server(threading.Thread):
-    def __init__(self, host, port):
-        threading.Thread.__init__(self)
-        self.running = False
-        self.host = host
-        self.port = port
-        self.threads = []
-        self.threadsLock = threading.Lock()
-        self.logLock = threading.Lock()
-    def run(self):
-        self.soc = socket.socket(socket.AF_INET)
-        self.soc.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
-        self.soc.settimeout(2)
-        intport = int(self.port)
-        self.soc.bind((self.host, intport))
-        self.soc.listen(0)
-        self.running = True
-        try:
-            while self.running:
-                try:
-                    c, addr = self.soc.accept()
-                    c.setblocking(1)
-                except socket.timeout:
-                    continue
-                conn = ConnectionHandler(c, self, addr)
-                conn.start()
-                self.addConn(conn)
-        finally:
-            self.running = False
-            self.soc.close()
-    def printLog(self, log):
-        self.logLock.acquire()
-        print log
-        self.logLock.release()
-    def addConn(self, conn):
-        try:
-            self.threadsLock.acquire()
-            if self.running:
-                self.threads.append(conn)
-        finally:
-            self.threadsLock.release()
-    def removeConn(self, conn):
-        try:
-            self.threadsLock.acquire()
-            self.threads.remove(conn)
-        finally:
-            self.threadsLock.release()
-    def close(self):
-        try:
-            self.running = False
-            self.threadsLock.acquire()
-            threads = list(self.threads)
-            for c in threads:
-                c.close()
-        finally:
-            self.threadsLock.release()
-class ConnectionHandler(threading.Thread):
-    def __init__(self, socClient, server, addr):
-        threading.Thread.__init__(self)
-        self.clientClosed = False
-        self.targetClosed = True
-        self.client = socClient
-        self.client_buffer = ''
-        self.server = server
-        self.log = 'Connection: ' + str(addr)
-    def close(self):
-        try:
-            if not self.clientClosed:
-                self.client.shutdown(socket.SHUT_RDWR)
-                self.client.close()
-        except:
-            pass
-        finally:
-            self.clientClosed = True
-        try:
-            if not self.targetClosed:
-                self.target.shutdown(socket.SHUT_RDWR)
-                self.target.close()
-        except:
-            pass
-        finally:
-            self.targetClosed = True
-    def run(self):
-        try:
-            self.client_buffer = self.client.recv(BUFLEN)
-            hostPort = self.findHeader(self.client_buffer, 'X-Real-Host')
-            if hostPort == '':
-                hostPort = DEFAULT_HOST
-            split = self.findHeader(self.client_buffer, 'X-Split')
-            if split != '':
-                self.client.recv(BUFLEN)
-            if hostPort != '':
-                passwd = self.findHeader(self.client_buffer, 'X-Pass')
-				
-                if len(PASS) != 0 and passwd == PASS:
-                    self.method_CONNECT(hostPort)
-                elif len(PASS) != 0 and passwd != PASS:
-                    self.client.send('HTTP/1.1 400 WrongPass!\r\n\r\n')
-                elif hostPort.startswith('127.0.0.1') or hostPort.startswith('localhost'):
-                    self.method_CONNECT(hostPort)
-                else:
-                    self.client.send('HTTP/1.1 403 Forbidden!\r\n\r\n')
-            else:
-                print '- No X-Real-Host!'
-                self.client.send('HTTP/1.1 400 NoXRealHost!\r\n\r\n')
-        except Exception as e:
-            self.log += ' - error: ' + e.strerror
-            self.server.printLog(self.log)
-	    pass
-        finally:
-            self.close()
-            self.server.removeConn(self)
-    def findHeader(self, head, header):
-        aux = head.find(header + ': ')
-        if aux == -1:
-            return ''
-        aux = head.find(':', aux)
-        head = head[aux+2:]
-        aux = head.find('\r\n')
-        if aux == -1:
-            return ''
-        return head[:aux];
-    def connect_target(self, host):
-        i = host.find(':')
-        if i != -1:
-            port = int(host[i+1:])
-            host = host[:i]
-        else:
-            if self.method=='CONNECT':
-                port = 443
-            else:
-                port = sys.argv[1]
-        (soc_family, soc_type, proto, _, address) = socket.getaddrinfo(host, port)[0]
-        self.target = socket.socket(soc_family, soc_type, proto)
-        self.targetClosed = False
-        self.target.connect(address)
-    def method_CONNECT(self, path):
-        self.log += ' - CONNECT ' + path
-        self.connect_target(path)
-        self.client.sendall(RESPONSE)
-        self.client_buffer = ''
-        self.server.printLog(self.log)
-        self.doCONNECT()
-    def doCONNECT(self):
-        socs = [self.client, self.target]
-        count = 0
-        error = False
-        while True:
-            count += 1
-            (recv, _, err) = select.select(socs, [], socs, 3)
-            if err:
-                error = True
-            if recv:
-                for in_ in recv:
-		    try:
-                        data = in_.recv(BUFLEN)
-                        if data:
-			    if in_ is self.target:
-				self.client.send(data)
-                            else:
-                                while data:
-                                    byte = self.target.send(data)
-                                    data = data[byte:]
-                            count = 0
-			else:
-			    break
-		    except:
-                        error = True
-                        break
-            if count == TIMEOUT:
-                error = True
-            if error:
-                break
-def print_usage():
-    print 'Usage: proxy.py -p <port>'
-    print '       proxy.py -b <bindAddr> -p <port>'
-    print '       proxy.py -b 0.0.0.0 -p 80'
-def parse_args(argv):
-    global LISTENING_ADDR
-    global LISTENING_PORT
-    
-    try:
-        opts, args = getopt.getopt(argv,"hb:p:",["bind=","port="])
-    except getopt.GetoptError:
-        print_usage()
-        sys.exit(2)
-    for opt, arg in opts:
-        if opt == '-h':
-            print_usage()
-            sys.exit()
-        elif opt in ("-b", "--bind"):
-            LISTENING_ADDR = arg
-        elif opt in ("-p", "--port"):
-            LISTENING_PORT = int(arg)
-def main(host=LISTENING_ADDR, port=LISTENING_PORT):
-    print "\n:-------PythonProxy-------:\n"
-    print "Listening addr: " + LISTENING_ADDR
-    print "Listening port: " + str(LISTENING_PORT) + "\n"
-    print ":-------------------------:\n"
-    server = Server(LISTENING_ADDR, LISTENING_PORT)
-    server.start()
-    while True:
-        try:
-            time.sleep(2)
-        except KeyboardInterrupt:
-            print 'Stopping...'
-            server.close()
-            break
-#######    parse_args(sys.argv[1:])
-if __name__ == '__main__':
-    main()
-PTHON
-}
-service1() {
-cat << END > /lib/systemd/system/yakult.service
-[Unit]
-Description=Yakult
-Documentation=https://google.com
-After=network.target nss-lookup.target
-[Service]
-Type=simple
-User=root
-NoNewPrivileges=true
-CapabilityBoundingSet=CAP_NET_ADMIN CAP_NET_BIND_SERVICE
-AmbientCapabilities=CAP_NET_ADMIN CAP_NET_BIND_SERVICE
-ExecStart=/usr/bin/python -O /usr/sbin/yakult
-ProtectSystem=true
-ProtectHome=true
-RemainAfterExit=yes
-Restart=on-failure
-[Install]
-WantedBy=multi-user.target
-END
-}
 
 pythonproxyinstall(){
 clear
@@ -985,12 +734,15 @@ icp_access allow all
 always_direct allow all
 visible_hostname Firenet-Proxy
 error_directory /usr/share/squid/errors/English' >> squid.conf
-    cd /usr/share/squid/errors/English
-    rm ERR_INVALID_URL
-    echo '<!--FirenetDev--><!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><title>SECURE PROXY</title><meta name="viewport" content="width=device-width, initial-scale=1"><meta http-equiv="X-UA-Compatible" content="IE=edge"/><link rel="stylesheet" href="https://bootswatch.com/4/slate/bootstrap.min.css" media="screen"><link href="https://fonts.googleapis.com/css?family=Press+Start+2P" rel="stylesheet"><style>body{font-family: "Press Start 2P", cursive;}.fn-color{color: #ffff; background-image: -webkit-linear-gradient(92deg, #f35626, #feab3a); -webkit-background-clip: text; -webkit-text-fill-color: transparent; -webkit-animation: hue 5s infinite linear;}@-webkit-keyframes hue{from{-webkit-filter: hue-rotate(0deg);}to{-webkit-filter: hue-rotate(-360deg);}}</style></head><body><div class="container" style="padding-top: 50px"><div class="jumbotron"><h1 class="display-3 text-center fn-color">SECURE PROXY</h1><h4 class="text-center text-danger">SERVER</h4><p class="text-center">😍 %w 😍</p></div></div></body></html>' >> ERR_INVALID_URL
-    chmod 755 *
-    /etc/init.d/squid start
+cd /usr/share/squid/errors/English
+rm ERR_INVALID_URL
+echo '<!--FirenetDev--><!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><title>SECURE PROXY</title><meta name="viewport" content="width=device-width, initial-scale=1"><meta http-equiv="X-UA-Compatible" content="IE=edge"/><link rel="stylesheet" href="https://bootswatch.com/4/slate/bootstrap.min.css" media="screen"><link href="https://fonts.googleapis.com/css?family=Press+Start+2P" rel="stylesheet"><style>body{font-family: "Press Start 2P", cursive;}.fn-color{color: #ffff; background-image: -webkit-linear-gradient(92deg, #f35626, #feab3a); -webkit-background-clip: text; -webkit-text-fill-color: transparent; -webkit-animation: hue 5s infinite linear;}@-webkit-keyframes hue{from{-webkit-filter: hue-rotate(0deg);}to{-webkit-filter: hue-rotate(-360deg);}}</style></head><body><div class="container" style="padding-top: 50px"><div class="jumbotron"><h1 class="display-3 text-center fn-color">SECURE PROXY</h1><h4 class="text-center text-danger">SERVER</h4><p class="text-center">😍 %w 😍</p></div></div></body></html>' >> ERR_INVALID_URL
+chmod 755 *
+/etc/init.d/squid start
 cd /etc || exit
+wget 'https://pastebin.com/raw/xtPc5t1k' -O /etc/socks.py
+dos2unix /etc/socks.py
+chmod +x /etc/socks.py
 rm /etc/apt/sources.list
 sudo cp /etc/apt/sources.list_backup /etc/apt/sources.list
  } &>/dev/null
@@ -1083,8 +835,6 @@ do
 		create_hostname
 		install_rclocal
 		iptablesrules
-		service
-		service1
 		pythonproxyinstall	
 		premiumcategory			
 		serviceenable
@@ -1157,4 +907,4 @@ do
 done
 history -c
 history -w
-rm -rf test7
+rm -rf test8
