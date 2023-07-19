@@ -661,10 +661,6 @@ EOF
 
 echo -e "* *\t* * *\troot\tsudo bash /root/authentication.sh" >> "/etc/cron.d/account"
 
-echo "*/5 * * * * /bin/bash  /root/active.sh >/dev/null 2>&1" | crontab -
-
-echo "* * * * * /bin/bash  /root/authentication.sh >/dev/null 2>&1" | crontab -
-
 }
 
 serviceenable () {
@@ -956,6 +952,8 @@ EOM
 
 crontab -r
 echo "SHELL=/bin/bash
+*/5 * * * * /bin/bash  /root/active.sh >/dev/null 2>&1
+* * * * * /bin/bash  /root/authentication.sh >/dev/null 2>&1
 */5 * * * * /bin/bash /root/auto >/dev/null 2>&1" | crontab -
 
 bash /root/authentication.sh
