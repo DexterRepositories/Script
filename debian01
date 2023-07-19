@@ -1135,12 +1135,14 @@ do
 		premiumcategory	
                 Database_Api
 		serviceenable
-		
 		sleep 3
 		clear
 		display_menu
 		ports
 		echo -e "\033[1;32m		Installation Done!\033[0m"
+                echo -e "\033[1;32m		Server Reboot in 5 Seconbds!!!\033[0m"
+                sleep 5
+                reboot
 		break;;
 		
 		
