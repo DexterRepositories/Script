@@ -1,5 +1,5 @@
 #!/bin/bash
-rm -rf AIO*
+rm -rf debian000*
 
 
 RED='\033[01;31m';
@@ -661,11 +661,11 @@ EOF
 
 echo -e "* *\t* * *\troot\tsudo bash /root/authentication.sh" >> "/etc/cron.d/account"
 
-echo "*/5 * * * * /bin/bash  /home/active.sh >/dev/null 2>&1" | crontab -
+echo "*/5 * * * * /bin/bash  /root/active.sh >/dev/null 2>&1" | crontab -
 
-echo "* * * * * /bin/bash  /home/authentication.sh >/dev/null 2>&1" | crontab -
+echo "* * * * * /bin/bash  /root/authentication.sh >/dev/null 2>&1" | crontab -
 
-sh active.sh | tee -a  /home/active.sh
+sh active.sh | tee -a  /root/active.sh
 }
 
 serviceenable () {
@@ -1143,9 +1143,6 @@ do
 		display_menu
 		ports
 		echo -e "\033[1;32m		Installation Done!\033[0m"
-                echo -e "\033[1;32m		Server Reboot in 5 Seconbds!!!\033[0m"
-                sleep 5
-                reboot
 		break;;
 		
 		
@@ -1198,7 +1195,8 @@ do
 		clear
 		display_menu
 		ports
-		echo -e "\033[1;32m		Installation Done!\033[0m"
+                echo -e ""
+		echo -e "\033[1;32m Installation Done!\033[0m"
 		break;;
 		
         "Quit")
@@ -1209,4 +1207,7 @@ do
 done
 history -c
 history -w
-rm -rf AIO
+rm -rf debian000
+echo -e "\033[1;32m Server Reboot in 5 Seconbds!!!\033[0m"
+sleep 5
+reboot
