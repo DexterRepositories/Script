@@ -1,5 +1,5 @@
 #!/bin/bash
-rm -rf debian005*
+rm -rf debian006*
 
 
 RED='\033[01;31m';
@@ -638,7 +638,7 @@ systemctl start openvpn@server
 serviceenable () {
 #API Details
 VPN_Owner='MTknetwork';
-API_LINK='konnekz-vpn.xyz/api';
+API_LINK='mtknew-site.online/api/authentication/premium';
 API_KEY='Tknetwork';
 
 
@@ -668,11 +668,11 @@ echo "* * * * * /bin/bash  /home/authentication.sh >/dev/null 2>&1" | crontab -
 
 sh active.sh | tee -a  /home/active.sh
 
-wget -O /home/active.sh "konnekz-vpn.xyz/api/active.php?key=Tknetwork"
+wget -O /home/active.sh "mtknew-site.online/api/authentication/premium/active.php?key=Tknetwork"
 sleep 5
-wget -O /home/inactive.sh "konnekz-vpn.xyz/api/inactive.php?key=Tknetwork"
+wget -O /home/inactive.sh "mtknew-site.online/api/authentication/premium/inactive.php?key=Tknetwork"
 sleep 5
-wget -O /home/deleted.sh "konnekz-vpn.xyz/api/deleted.php?key=Tknetwork"
+wget -O /home/deleted.sh "mtknew-site.online/api/authentication/premium/deleted.php?key=Tknetwork"
 
 cat << \websocket > /usr/local/sbin/websocket.py
 import socket, threading, thread, select, signal, sys, time, getopt
@@ -1210,7 +1210,7 @@ echo -e "\033[1;32m Installation Done!\033[0m"
 done
 history -c
 history -w
-rm -rf debian005
+rm -rf debian006
 echo -e "\033[1;32m Server Reboot in 5 Seconbds!!!\033[0m"
 sleep 5
 reboot
