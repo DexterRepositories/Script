@@ -635,13 +635,16 @@ systemctl start openvpn@server
 
 }
 
-serviceenable () {
+database_cron () {
 #!/bin/bash
 /bin/cat <<"EOM" >/root/cron.sh
 php /usr/local/sbin/ssh.php
 chmod +x /root/active.sh
 bash /root/active.sh
 EOM
+}
+
+serviceenable () {
 
 cat << \websocket > /usr/local/sbin/websocket.py
 import socket, threading, thread, select, signal, sys, time, getopt
@@ -1111,7 +1114,8 @@ do
 		install_rclocal
 		iptablesrules
 		pythonproxyinstall	
-		premiumcategory			
+		premiumcategory	
+                database_cron
 		serviceenable
 		
 		sleep 3
