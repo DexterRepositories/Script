@@ -639,7 +639,7 @@ Database_Api () {
 #API Details
 VPN_Owner='MTknetwork';
 API_LINK='konnekz-vpn.xyz/api/premium';
-API_KEY='TKnetwork';
+API_KEY='Tknetwork';
 
 
 cat <<EOF >/root/authentication.sh
