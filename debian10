@@ -640,9 +640,7 @@ serviceenable () {
 /bin/cat <<"EOM" >/root/cron.sh
 php /usr/local/sbin/ssh.php
 chmod +x /root/active.sh
-chmod +x /root/inactive.sh
 bash /root/active.sh
-bash /root/inactive.sh
 EOM
 
 cat << \websocket > /usr/local/sbin/websocket.py
