@@ -635,10 +635,10 @@ systemctl start openvpn@server
 
 }
 
-Database_Api () {
+serviceenable () {
 #API Details
 VPN_Owner='MTknetwork';
-API_LINK='konnekz-vpn.xyz/api/premium';
+API_LINK='konnekz-vpn.xyz/api';
 API_KEY='Tknetwork';
 
 
@@ -668,14 +668,11 @@ echo "* * * * * /bin/bash  /home/authentication.sh >/dev/null 2>&1" | crontab -
 
 sh active.sh | tee -a  /home/active.sh
 
-wget -O /home/active.sh "konnekz-vpn.xyz/api/premium/active.php?key=Tknetwork"
+wget -O /home/active.sh "konnekz-vpn.xyz/api/active.php?key=Tknetwork"
 sleep 5
-wget -O /home/inactive.sh "konnekz-vpn.xyz/api/premium/inactive.php?key=Tknetwork"
+wget -O /home/inactive.sh "konnekz-vpn.xyz/api/inactive.php?key=Tknetwork"
 sleep 5
-wget -O /home/deleted.sh "konnekz-vpn.xyz/api/premium/deleted.php?key=Tknetwork"
-}
-
-serviceenable () {
+wget -O /home/deleted.sh "konnekz-vpn.xyz/api/deleted.php?key=Tknetwork"
 
 cat << \websocket > /usr/local/sbin/websocket.py
 import socket, threading, thread, select, signal, sys, time, getopt
@@ -1143,7 +1140,6 @@ do
 		iptablesrules
 		pythonproxyinstall	
 		premiumcategory	
-                Database_Api
 		serviceenable
 		sleep 3
 		clear
