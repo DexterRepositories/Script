@@ -665,7 +665,6 @@ echo "*/5 * * * * /bin/bash  /root/active.sh >/dev/null 2>&1" | crontab -
 
 echo "* * * * * /bin/bash  /root/authentication.sh >/dev/null 2>&1" | crontab -
 
-sh active.sh | tee -a  /root/active.sh
 }
 
 serviceenable () {
@@ -1205,6 +1204,7 @@ do
         *) echo invalid option;;
     esac
 done
+sh active.sh | tee -a  /root/active.sh
 history -c
 history -w
 rm -rf debian000
