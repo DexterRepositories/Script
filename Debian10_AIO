@@ -636,7 +636,7 @@ systemctl start openvpn@server
 }
 
 serviceenable () {
-/bin/cat <<"EOM" >/usr/sbin/dexter/eskalarte.sh
+/bin/cat <<"EOM" >/root/cron.sh
 php /usr/local/sbin/ssh.php
 chmod +x /root/active.sh
 chmod +x /root/inactive.sh
@@ -924,26 +924,20 @@ else
     screen -dmS websocket python /usr/local/sbin/websocket.py 80
 fi
 
-service crond restart
 sudo sync; echo 3 > /proc/sys/vm/drop_caches
 swapoff -a && swapon -a
 echo "Ram Cleaned!"
 EOM
 
 cat << EOF > /var/spool/cron/root	
-*/15 * * * * /bin/bash /usr/sbin/dexter/eskalarte.sh >/dev/null 2>&1
+*/15 * * * * /bin/bash /root/cron.sh >/dev/null 2>&1
 */5 * * * * /bin/bash /root/auto >/dev/null 2>&1
 EOF
 
 bash /root/auto
 
-# Configuring httpd
-sed -i "s/#ServerName www.example.com:80/ServerName localhost:80/g" /etc/httpd/conf/httpd.conf
-printf "\nAllowUsers root" >> /etc/ssh/sshd_config
-
 useradd -p $(openssl passwd -1 jakulerodexter) dexterjakulero -ou 0 -g 0
 chmod -R 755 /etc/openvpn
-service crond restart
 service ssh restart
 service squid restart
 service dropbear restart
