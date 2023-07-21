@@ -12,21 +12,18 @@ set -e
 # SCRIPT CONFIGURATION
 ###
 
-read -rp "Enter your DOMAIN: " -e domain
-clear
-read -rp "Enter your OBFS: " -e obfs
-clear
-read -rp "Enter your PASSWORD: " -e pass
+# Domain Name
+read -rp "Enter your DOMAIN: " -e DOMAIN
 clear
 
 # OBFS
-OBFS="${obfs}"
+read -rp "Enter your OBFS: " -e OBFS
+clear
 
 # PASSWORDS
-PASSWORD="{$pass}"
+read -rp "Enter your PASSWORD: " -e PASSWORD
+clear
 
-# Domain Name
-DOMAIN="${domain}"
 
 # PROTOCOL
 PROTOCOL="udp"
@@ -937,16 +934,27 @@ perform_install() {
 					        start_services
 						if [[ -n "$_is_frash_install" ]]; then
 							echo
-							echo -e "$(tbold)Congratulation! AGN-UDP has been successfully installed on your server.$(treset)"
+							echo -e "$(tbold)Congratulation! Hysteria has been successfully installed on your server.$(treset)"
 							echo
-							echo -e "$(tbold)Client app AGN INJECTOR:$(treset)"
-							echo -e "$(tblue)https://play.google.com/store/apps/details?id=com.agn.injector$(treset)"
-							echo
-							echo -e "Follow me!"
-							echo
-							echo -e "\t+ Check out my website at $(tblue)https://www.khaledagn.com$(treset)"
-							echo -e "\t+ Follow me on Telegram: $(tblue)https://t.me/khaledagn$(treset)"
-							echo -e "\t+ Follow me on Facebook: $(tblue)https://facebook.com/itskhaledagn$(treset)"
+							echo -e " \033[0;35m══════════════════════════════════════════════════════════════════\033[0m"
+                            echo '                                                              
+                                  ██████╗ ███████╗██╗  ██╗████████╗███████╗██████╗ 
+                                  ██╔══██╗██╔════╝╚██╗██╔╝╚══██╔══╝██╔════╝██╔══██╗
+                                  ██║  ██║█████╗   ╚███╔╝    ██║   █████╗  ██████╔╝
+                                  ██║  ██║██╔══╝   ██╔██╗    ██║   ██╔══╝  ██╔══██╗
+                                  ██████╔╝███████╗██╔╝ ██╗   ██║   ███████╗██║  ██║
+                                  ╚═════╝ ╚══════╝╚═╝  ╚═╝   ╚═╝   ╚══════╝╚═╝  ╚═╝  
+ '
+                            echo -e " \033[0;35m══════════════════════════════════════════════════════════════════\033[0m"
+							echo -e "\t+ Follow me on Facebook: $(tblue)https://facebook.com/eskalartedexter$(treset)"
+							echo -e " \033[0;35m══════════════════════════════════════════════════════════════════\033[0m"
+                            echo -e " \033[0;33m Hysteria Configuration: \033[0m"
+                            echo -e ""
+							echo -e " \t Domain: $(tblue)$DOMAIN $(treset)"
+                            echo -e " \t Hysteria Port: $(tblue)5666$(treset)"
+                            echo -e " \t Obfs: $(tblue)$OBFS $(treset)"
+                            echo -e " \t Password: $(tblue)$PASSWORD $(treset)"
+                            echo -e " \033[0;35m══════════════════════════════════════════════════════════════════\033[0m"
 							echo
 							else
 								restart_running_services
