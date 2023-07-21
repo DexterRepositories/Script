@@ -4,10 +4,19 @@
 #
 # (c) 2023 Khaled AGN
 #
+timedatectl set-timezone Asia/Manila
+
+export DEBIAN_FRONTEND=noninteractive
+apt update
+apt install -y curl wget cron python-minimal libpython-stdlib
+apt install -y iptables
+apt install -y openvpn netcat httpie php neofetch vnstat
+apt install -y screen squid stunnel4 dropbear gnutls-bin python
+apt install -y dos2unix nano unzip jq virt-what net-tools default-mysql-client
+apt install -y mlocate dh-make libaudit-dev build-essential fail2ban
+
 
 set -e
-
-
 ###
 # SCRIPT CONFIGURATION
 ###
@@ -25,7 +34,7 @@ clear
 PROTOCOL="udp"
 
 # UDP PORT
-UDP_PORT="5666"
+UDP_PORT=":5666"
 
 # Basename of this script
 SCRIPT_NAME="$(basename "$0")"
@@ -686,7 +695,7 @@ EOM
 
   cat << EOF
 {
-  "listen": ":$UDP_PORT",
+  "listen": "$UDP_PORT",
   "protocol": "$PROTOCOL",
   "cert": "/etc/hysteria/hysteria.server.crt",
   "key": "/etc/hysteria/hysteria.server.key",
