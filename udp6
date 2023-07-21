@@ -88,8 +88,6 @@ cat <<\EOF >/etc/hysteria/config.json
 EOF
 
 chmod 755 /etc/hysteria/config.json
-chmod 755 /etc/hysteria/hysteria.server.crt
-chmod 755 /etc/hysteria/hysteria.server.key
 chmod 755 /etc/hysteria/.auth.sh
 
 # PROTOCOL
@@ -1060,7 +1058,10 @@ setup_ssl() {
 	
 	openssl req -newkey rsa:2048 -nodes -keyout /etc/hysteria/hysteria.server.key -subj "/C=CN/ST=GD/L=SZ/O=Hysteria, Inc./CN=$DOMAIN" -out /etc/hysteria/hysteria.server.csr
 	
-	openssl x509 -req -extfile <(printf "subjectAltName=DNS:$DOMAIN,DNS:$DOMAIN") -days 3650 -in /etc/hysteria/hysteria.server.csr -CA /etc/hysteria/hysteria.ca.crt -CAkey /etc/hysteria/hysteria.ca.key -CAcreateserial -out /etc/hysteria/hysteria.server.crt	
+	openssl x509 -req -extfile <(printf "subjectAltName=DNS:$DOMAIN,DNS:$DOMAIN") -days 3650 -in /etc/hysteria/hysteria.server.csr -CA /etc/hysteria/hysteria.ca.crt -CAkey /etc/hysteria/hysteria.ca.key -CAcreateserial -out /etc/hysteria/hysteria.server.crt
+
+       chmod 755 /etc/hysteria/hysteria.server.crt
+       chmod 755 /etc/hysteria/hysteria.server.key
 }
 
 start_services() {
