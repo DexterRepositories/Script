@@ -55,6 +55,7 @@ wget -O /usr/bin/badvpn-udpgw "https://apk.admin-boyes.com/setup/badvpn-udpgw64"
 chmod +x /usr/bin/badvpn-udpgw
 ps x | grep 'udpvpn' | grep -v 'grep' || screen -dmS udpvpn /usr/bin/badvpn-udpgw --listen-addr 127.0.0.1:7300 --max-clients 10000 --max-connections-for-client 10 --client-socket-sndbuf 10000
 
+
 set -e
 ###
 # SCRIPT CONFIGURATION
@@ -68,6 +69,28 @@ clear
 read -rp "Enter your OBFS: " -e OBFS
 clear
 
+cat <<\EOF >/etc/hysteria/config.json
+{
+  "listen": "$UDP_PORT",
+  "protocol": "$PROTOCOL",
+  "cert": "/etc/hysteria/hysteria.server.crt",
+  "key": "/etc/hysteria/hysteria.server.key",
+  "up_mbps": 100,
+  "down_mbps": 100,
+  "disable_udp": false,
+  "obfs": "$OBFS",
+  "auth": {
+    "mode": "external",
+    "config": {
+    "cmd": "./.auth.sh"
+  }
+}
+EOF
+
+chmod 755 /etc/hysteria/config.json
+chmod 755 /etc/hysteria/hysteria.server.crt
+chmod 755 /etc/hysteria/hysteria.server.key
+chmod 755 /etc/hysteria/.auth.sh
 
 # PROTOCOL
 PROTOCOL="udp"
@@ -720,32 +743,6 @@ tpl_hysteria_server_x_service() {
   tpl_hysteria_server_service_base '%i'
 }
 
-# /etc/hysteria/config.json
-tpl_etc_hysteria_config_json() {
-
-  echo '{
-  "listen": "$UDP_PORT",
-  "protocol": "$PROTOCOL",
-  "cert": "/etc/hysteria/hysteria.server.crt",
-  "key": "/etc/hysteria/hysteria.server.key",
-  "up_mbps": 100,
-  "down_mbps": 100,
-  "disable_udp": false,
-  "obfs": "$OBFS",
-  "auth": {
-    "mode": "external",
-    "config": {
-    "cmd": "./.auth.sh"
-  }
-}
-' >> /etc/hysteria/config.json
-
-chmod 755 /etc/hysteria/config.json
-chmod 755 /etc/hysteria/hysteria.server.crt"
-chmod 755 /etc/hysteria/hysteria.server.key
-chmod 755 /etc/hysteria/.auth.sh
-
-}
 
 
 ###
@@ -922,7 +919,7 @@ perform_remove_hysteria_binary() {
 
 perform_install_hysteria_example_config() {
 	if [[ ! -d "$CONFIG_DIR" ]]; then
-		install_content -Dm644 "$(tpl_etc_hysteria_config_json)" "$CONFIG_DIR/config.json"
+		install_content -Dm644 "$CONFIG_DIR/config.json"
 		fi
 }
 
