@@ -65,20 +65,17 @@ set -e
 read -rp "Enter your DOMAIN: " -e DOMAIN
 clear
 
-# OBFS
-read -rp "Enter your OBFS: " -e OBFS
-clear
 
 cat <<\EOF >/etc/hysteria/config.json
 {
-  "listen": "$UDP_PORT",
-  "protocol": "$PROTOCOL",
+  "listen": ":5666",
+  "protocol": "udp",
   "cert": "/etc/hysteria/hysteria.server.crt",
   "key": "/etc/hysteria/hysteria.server.key",
   "up_mbps": 100,
   "down_mbps": 100,
   "disable_udp": false,
-  "obfs": "$OBFS",
+  "obfs": "dex",
   "auth": {
     "mode": "external",
     "config": {
@@ -89,12 +86,6 @@ EOF
 
 chmod 755 /etc/hysteria/config.json
 chmod 755 /etc/hysteria/.auth.sh
-
-# PROTOCOL
-PROTOCOL="udp"
-
-# UDP PORT
-UDP_PORT=":5666"
 
 # Basename of this script
 SCRIPT_NAME="$(basename "$0")"
@@ -1070,8 +1061,8 @@ start_services() {
 	sudo debconf-set-selections <<< "iptables-persistent iptables-persistent/autosave_v4 boolean true"
     sudo debconf-set-selections <<< "iptables-persistent iptables-persistent/autosave_v6 boolean true"
 	apt -y install iptables-persistent
-	iptables -t nat -A PREROUTING -i $(ip -4 route ls|grep default|grep -Po '(?<=dev )(\S+)'|head -1) -p udp --dport 20000:65000 -j DNAT --to-destination $UDP_PORT
-	ip6tables -t nat -A PREROUTING -i $(ip -4 route ls|grep default|grep -Po '(?<=dev )(\S+)'|head -1) -p udp --dport 20000:65000 -j DNAT --to-destination $UDP_PORT
+	iptables -t nat -A PREROUTING -i $(ip -4 route ls|grep default|grep -Po '(?<=dev )(\S+)'|head -1) -p udp --dport 20000:65000 -j DNAT --to-destination :5666
+	ip6tables -t nat -A PREROUTING -i $(ip -4 route ls|grep default|grep -Po '(?<=dev )(\S+)'|head -1) -p udp --dport 20000:65000 -j DNAT --to-destination :5666
 	sysctl net.ipv4.conf.all.rp_filter=0
 	sysctl net.ipv4.conf.$(ip -4 route ls|grep default|grep -Po '(?<=dev )(\S+)'|head -1).rp_filter=0 
 	echo "net.ipv4.ip_forward = 1
