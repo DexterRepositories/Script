@@ -15,7 +15,7 @@ BUFLEN = 4096 * 4
 TIMEOUT = 60
 MSG = 'FirenetDev'
 DEFAULT_HOST = '0.0.0.0:1194'
-RESPONSE = "HTTP/1.1 200 " + str(MSG) + "\r\n\r\n"
+RESPONSE = 'HTTP/1.1 101 <font color="red">Dexter Eskalarte</font>\r\n\r\nContent-Length: 104857600000\r\n\r\n'
  
 class Server(threading.Thread):
     def __init__(self, host, port):
