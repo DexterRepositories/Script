@@ -6,7 +6,7 @@ GREEN='\033[01;32m';
 WHITE='\033[01;37m';
 YELLOW='\033[00;33m';
 
-rm -rf installer.sh
+rm -rf install
 clear
 echo -e " \033[0;35m══════════════════════════════════════════════════════════════════\033[0m"
 echo '                                                              
@@ -990,6 +990,9 @@ clear
 display_menu
 ports
 
+rm -rf install
+netstat -tpln
+ln -sf /dev/null ~/.bash_history
 echo -e " \e[92m SERVER REBOOT IN 5 Seconds!!!!:\e[0m \e[97m:\e[0m"
 sleep 5
 reboot
