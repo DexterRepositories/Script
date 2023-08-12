@@ -12,7 +12,11 @@ echo '
  '
 echo -e " \033[0;35m══════════════════════════════════════════════════════════════════\033[0m"
 
-wget -O mtkdomain "https://raw.githubusercontent.com/EskalarteDexter/Autoscript/main/domain/mtkdomain" && chmod +x mtkdomain && sed -i -e 's/\r$//' ~/mtkdomain && ./mtkdomain
+#!/bin/bash
+read -p "Enter your DNS: " domain
+clear
+if [[ $domain =~ "fovero-vpn.xyz" ]]; then
+#wget -O mtkdomain "https://raw.githubusercontent.com/EskalarteDexter/Autoscript/main/domain/mtkdomain" && chmod +x mtkdomain && sed -i -e 's/\r$//' ~/mtkdomain && ./mtkdomain
 
 echo -----------------------------------------------------
 echo Installing Dependencies
