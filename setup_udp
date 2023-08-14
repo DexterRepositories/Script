@@ -20,7 +20,7 @@ echo -e "\033[1;31mStarting Script Withiin 5 Seconds\033[0m"
 sleep 5
 
 echo -e ""
-read -p ' ENTER YOUR DOMAIN/HOST: ' DOMAIN
+read -p ' ENTER YOUR DNS/HOST: ' DOMAIN
 echo -e ""
 
 set -e
