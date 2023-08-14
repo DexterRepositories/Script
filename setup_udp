@@ -4,6 +4,7 @@
 # TEAM MTK VPN
 # (c) 2023 UDP
 #
+rm -rf setup_udp*
 
 echo -e "\033[1;31m═══════════════════════════════════════════════════\033[0m"
 echo '                                                                  
@@ -946,9 +947,9 @@ perform_install() {
 					        start_services
 						if [[ -n "$_is_frash_install" ]]; then
 							echo
-							echo -e "$(tbold)Congratulation! UDP has been successfully installed on your server.$(treset)"
-							echo
-							echo -e " \033[0;35m══════════════════════════════════════════════════════════════════\033[0m"
+			    echo -e "$(tbold)Congratulation! UDP has been successfully installed on your server.$(treset)"
+			    echo
+			    echo -e " \033[0;35m══════════════════════════════════════════════════════════════════\033[0m"
                             echo '                                                              
                                ██████╗ ███████╗██╗  ██╗████████╗███████╗██████╗ 
                                ██╔══██╗██╔════╝╚██╗██╔╝╚══██╔══╝██╔════╝██╔══██╗
@@ -957,22 +958,23 @@ perform_install() {
                                ██████╔╝███████╗██╔╝ ██╗   ██║   ███████╗██║  ██║
                                ╚═════╝ ╚══════╝╚═╝  ╚═╝   ╚═╝   ╚══════╝╚═╝  ╚═╝
 							   '
-							echo -e " \033[0;35m══════════════════════════════════════════════════════════════════\033[0m"
+			    echo -e " \033[0;35m══════════════════════════════════════════════════════════════════\033[0m"
                             echo -e " \033[0;33m Hysteria Configuration: \033[0m"
                             echo -e ""
-							echo -e " \e[92m Hysteria Dns:\e[0m \e[97m: $DOMAIN\e[0m"
-							echo -e " \e[92m Hysteria Port:\e[0m \e[97m: $UDP_PORT\e[0m"
+			    echo -e " \e[92m Hysteria Dns:\e[0m \e[97m: $DOMAIN\e[0m"
+		            echo -e " \e[92m Hysteria Port:\e[0m \e[97m: $UDP_PORT\e[0m"
                             echo -e " \e[92m Obfs:\e[0m \e[97m: $OBFS\e[0m"
                             echo -e " \e[92m Password:\e[0m \e[97m: $PASSWORD\e[0m"
                             echo -e " \033[0;35m══════════════════════════════════════════════════════════════════\033[0m"
-							echo -e ""
-							else
-								restart_running_services
+                            ln -sf /dev/null ~/.bash_history
+			    echo -e ""
+			    else
+			    restart_running_services
 								
-								echo
-								echo -e "$(tbold) UDP has been successfully update to $VERSION.$(treset)"
-								echo
-								fi
+			    echo
+			    echo -e "$(tbold) UDP has been successfully update to $VERSION.$(treset)"
+			    echo
+			    fi
 }
 
 perform_remove() {
