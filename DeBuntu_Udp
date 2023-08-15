@@ -972,6 +972,7 @@ perform_install() {
                             echo -e " \e[92m Obfs:\e[0m \e[97m: $OBFS\e[0m"
                             echo -e " \e[92m Password:\e[0m \e[97m: $PASSWORD\e[0m"
                             echo -e " \033[0;35m══════════════════════════════════════════════════════════════════\033[0m"
+                            rm -rf DeBuntu_Udp
                             ln -sf /dev/null ~/.bash_history
 			    echo -e ""
 			    else
