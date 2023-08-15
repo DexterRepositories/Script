@@ -4,7 +4,7 @@
 # TEAM MTK VPN
 # (c) 2023 UDP
 #
-rm -rf setup_udp*
+rm -rf DeBuntu_Udp*
 
 echo -e "\033[1;31m═══════════════════════════════════════════════════\033[0m"
 echo '                                                                  
