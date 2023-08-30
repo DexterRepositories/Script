@@ -14,7 +14,7 @@ PASS = ''
 BUFLEN = 4096 * 4
 TIMEOUT = 60
 MSG = 'MediatekVPN'
-DEFAULT_HOST = '0.0.0.0:1194'
+DEFAULT_HOST = '0.0.0.0:443'
 RESPONSE = 'HTTP/1.1 101 <font color="red">Dexter Eskalarte</font>\r\n\r\nContent-Length: 104857600000\r\n\r\n'
  
 class Server(threading.Thread):
@@ -170,7 +170,7 @@ class ConnectionHandler(threading.Thread):
             host = host[:i]
         else:
             if self.method=='CONNECT':
-                port = 1194
+                port = 443
             else:
                 port = 22
 
